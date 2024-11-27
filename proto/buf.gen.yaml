@@ -1,0 +1,21 @@
+# The buf.gen.yaml file controls how the buf generate command executes protoc plugins. 
+# With a buf.gen.yaml, you can configure where each protoc plugin writes its result,
+# as well as specify options for each plugin independently.
+# more at: https://docs.buf.build/tour/generate-code
+version: v1
+
+managed:
+  enabled: true
+
+  optimize_for: SPEED
+
+plugins:
+  # Go.
+  - name: go
+    out: .
+    opt:
+      - paths=source_relative
+  - name: go-grpc
+    out: .
+    opt:
+      - paths=source_relative

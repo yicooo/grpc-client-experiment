@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package service.v1;
+
+option go_package = "simple-grpc/proto/service/v1";
+
+message Request { 
+    required string message = 1;
+}
+
+message Response { 
+    required string message = 1;
+}
+
+service Service {
+  rpc ServiceImp(Request) returns (Response) {}
+}
