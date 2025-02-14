@@ -11,31 +11,34 @@ import (
 	"syscall"
 	"time"
 
+	v1 "simple-grpc/proto/service/v1"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-	v1 "simple-grpc/proto/service/v1"
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	cc, err := NewGRPCConnection("headless-svc.default.svc.cluster.local:50051", false)
+	cc, err := NewGRPCConnection("server.default.svc.cluster.local:50051", false)
 	if err != nil {
 		log.Fatalf("fuck me err, %s", err.Error())
 	}
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	go func() {
+		var num uint64
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
 				out := &v1.Response{}
-				cc.Invoke(ctx, "/service.v1.Service/ServiceImp", &v1.Request{Message: &[]string{time.Now().String()}[0]}, out)
+				cc.Invoke(ctx, "/service.v1.Service/ServiceImp", &v1.Request{Message: &[]string{fmt.Sprintf("%s: sync: %d", time.Now().String(), num)}[0]}, out)
+				num++
 				log.Printf("response: %s", out.GetMessage())
 			}
 		}
@@ -60,9 +63,8 @@ func NewGRPCConnection(endpoint string, secure bool) (*grpc.ClientConn, error) {
 	}
 
 	return grpc.NewClient(
-		fmt.Sprintf("dns:///%s", endpoint),
+		endpoint,
 		grpc.WithTransportCredentials(creds),
-		grpc.WithDefaultServiceConfig(NewServiceConfig().EnableRoundRobin().ToString()),
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
 				BaseDelay:  time.Millisecond * 500,
